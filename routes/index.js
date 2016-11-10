@@ -17,7 +17,6 @@ module.exports = function makeRouterWithSockets (io) {
     client.query('SELECT tweets.id, userid, content, name, pictureurl  FROM tweets INNER JOIN users ON tweets.userid = users.id', function (err, result) {
     if (err) return next(err); // pass errors to Express
     var tweets = result.rows;
-    console.log(result);
     res.render('index', {
       title: 'Twitter.js',
       tweets: tweets,
@@ -39,12 +38,10 @@ module.exports = function makeRouterWithSockets (io) {
     //   showForm: true,
     //   username: req.params.username
     // });
-    console.log("username: "+req.params.username);
 
     client.query('SELECT * FROM tweets INNER JOIN users ON tweets.userid = users.id  WHERE name = $1',[req.params.username], function (err, result){
         if (err) return next(err); // pass errors to Express
         var tweets = result.rows;
-        console.log(tweets.name);
         res.render('index', {
           title: 'Twitter.js',
           tweets: tweets,
@@ -70,15 +67,31 @@ module.exports = function makeRouterWithSockets (io) {
 
   });
 
-  // create a new tweet
+  // post a tweet with existing name
   router.post('/tweets', function(req, res, next){
     // var newTweet = tweetBank.add(req.body.name, req.body.content);
-    // io.sockets.emit('new_tweet', newTweet);
-    //INSERT INTO tweets (user_id, content) VALUES ((SELECT id from users where name= $1,$2'[req.body.name]), [req.body.content]  );
-    client.query('INSERT INTO tweets (user_id, content) VALUES ((SELECT id from users where name= $1),$2)'[req.body.name], [req.body.content],function(err,result){
+
+
+     client.query('INSERT INTO tweets (userid, content) VALUES ((SELECT id from users where name= $1),$2)',[req.body.name, req.body.content],function(err,result){
+      if (err) next();
     });
     res.redirect('/');
   });
+
+//post a tweet with a new name
+  router.post('/tweets', function(req, res, next){
+    // var newTweet = tweetBank.add(req.body.name, req.body.content);
+    var url ='http://i.imgur.com/XDjBjfu.jpg';
+    client.query('INSERT INTO users (name, pictureurl) VALUES ($1, $2)', [req.body.name,url],function(err,result){
+      if (err) return next(err);
+    });
+
+     client.query('INSERT INTO tweets (userid, content) VALUES ((SELECT id from users where name= $1),$2)',[req.body.name, req.body.content,],function(err,result){
+    if (err) return next(err);
+    });
+    res.redirect('/');
+  });
+
 
 
 
